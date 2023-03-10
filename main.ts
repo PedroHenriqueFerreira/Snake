@@ -2,15 +2,15 @@ type Direction = 'up' | 'down' | 'left' | 'right';
 
 class Snake {
     private body: number[][];
-    private food: number[];
+    private food?: number[];
     private direction: Direction = 'right';
     private isPaused: boolean = true;
 
-    constructor(public canvas: HTMLCanvasElement, public arenaSize: number) {
+    constructor(public canvas: HTMLCanvasElement, public arenaSize: number, public fps: number) {
         this.arenaSize = arenaSize;
-        this.body = this.getCenterPosition();
+        this.body = this.getSnakeInitialPosition();
 
-        this.food = this.getFoodPosition();
+        this.food = this.getFoodRandomPosition();
         this.draw();
 
         window.addEventListener('keydown', (e) => this.switchDirection(e))
@@ -20,85 +20,78 @@ class Snake {
         const ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D;
 
         const canvasSize = this.canvas.width;
-        const snakeSize = canvasSize / this.arenaSize;
+        const pixelSize = canvasSize / this.arenaSize;
 
         ctx.fillStyle = '#87D973';
         ctx.fillRect(0, 0, canvasSize, canvasSize);
-        ctx.lineWidth = 3;
 
         for (let x = 0; x < this.arenaSize; x++) {
             for (let y = 0; y < this.arenaSize; y++) {
-                if ((x % 2 === 0 && y % 2 === 1) || (x % 2 === 1 && y % 2 === 0)) {
-                    ctx.fillStyle = '#7ECE6A';  
-                    ctx.fillRect(x * snakeSize, y * snakeSize, snakeSize, snakeSize);  
-                }
+                const bodyIndex = this.body.findIndex(pos => this.isArraysEqual(pos, [x, y]));
+                const hasFood = this.food && this.isArraysEqual(this.food, [x, y]);
+
+                if (bodyIndex !== -1) ctx.fillStyle = this.isEven(bodyIndex) ? '#3A29A8' : '#4430BE';
+                else if (hasFood) ctx.fillStyle = '#BE3049';
+                else if ((this.isEven(x) && this.isOdd(y)) || (this.isOdd(x) && this.isEven(y))) ctx.fillStyle = '#7ECE6A';  
+                else continue;
+
+                const food = this.food as number[];
+
+                const xPos = hasFood ? food[0] : x;
+                const yPos = hasFood ? food[1] : y;
+
+                ctx.fillRect(xPos * pixelSize, yPos * pixelSize, pixelSize, pixelSize);  
             }   
         }
-        
-        this.body.forEach(([x, y], idx) => {
-            if (idx % 2 === 0) {
-                ctx.fillStyle = '#3A29A8';
-            } else {
-                ctx.fillStyle = '#4430BE';
-            }
-            ctx.fillRect(x * snakeSize, y * snakeSize, snakeSize, snakeSize);
-        });
 
-        if (this.food) {
-            ctx.fillStyle = '#BE3049';
-            ctx.fillRect(this.food[0] * snakeSize, this.food[1] * snakeSize, snakeSize, snakeSize);
-        }   
+        if (!this.isPaused) return;
 
-        if (this.isPaused) {
-            ctx.fillStyle = '#0006';
-            ctx.fillRect(0, 0, canvasSize, canvasSize);
+        ctx.fillStyle = '#0008';
+        ctx.fillRect(0, 0, canvasSize, canvasSize);
 
-            ctx.fillStyle = '#fff';
-            ctx.font = '50px Minecraft';   
-            ctx.textAlign = "center";
+        ctx.fillStyle = '#fff';
+        ctx.font = '50px Minecraft';   
+        ctx.textAlign = "center";
 
-            const centerPosition = this.getCenterPosition();
-            const isEqualToStart = centerPosition.flat().every((pos, idx) => this.body.flat()[idx] === pos);
+        const isSnakeStarting = this.isArraysEqual(this.getSnakeInitialPosition().flat(), this.body.flat());
 
-            if (isEqualToStart && this.body.length === centerPosition.length) {
-                ctx.fillText("Jogar Snake", canvasSize / 2, canvasSize / 2); 
-            } else if (this.body.length === this.arenaSize ** 2) {
-                ctx.fillText("Parabens", canvasSize / 2, canvasSize / 2);
-            } else {
-                ctx.fillText("Jogar Novamente", canvasSize / 2, canvasSize / 2); 
-
-                ctx.fillText(`Pontos: ${this.body.length - centerPosition.length}`, canvasSize / 2, (canvasSize / 2) - 100);
-            }
+        if (isSnakeStarting) {
+            ctx.fillText("Jogar Snake", canvasSize / 2, canvasSize / 2); 
+        } else if (this.body.length === this.arenaSize ** 2) {
+            ctx.fillText("Parabens", canvasSize / 2, canvasSize / 2);
+        } else {
+            ctx.fillText("Jogar Novamente", canvasSize / 2, canvasSize / 2); 
+            ctx.fillText(`Pontos: ${this.getPonctuation()}`, canvasSize / 2, (canvasSize / 2) - 100);
         }
     }
 
     move() {
         if (this.isPaused) return;
-        
-        const head = this.body[this.body.length - 1];
-        const prevBody = [...this.body];
+        const currentHead = this.body[this.body.length - 1];
 
         switch (this.direction) {
             case 'up':
-                this.body.push([head[0], head[1] - 1]);
+                this.body.push([currentHead[0], currentHead[1] - 1]);
                 break;
             case 'down':
-                this.body.push([head[0], head[1] + 1]);
+                this.body.push([currentHead[0], currentHead[1] + 1]);
                 break;
             case 'left':
-                this.body.push([head[0] - 1, head[1]]);
+                this.body.push([currentHead[0] - 1, currentHead[1]]);
                 break;
             case 'right':
-                this.body.push([head[0] + 1, head[1]]);
+                this.body.push([currentHead[0] + 1, currentHead[1]]);
                 break;
         }
 
-        const currentPos = this.body[this.body.length - 1];
-        const isBodyColiding = prevBody.some(pos => pos[0] === currentPos[0] && currentPos[1] === pos[1]);
-        const isArenaColiding = currentPos.some(pos => pos < 0 || pos >= this.arenaSize);
+        const head = this.body[this.body.length - 1];
+        const body = this.body.slice(0, -1);
 
-        if (this.food && currentPos[0] === this.food[0] && currentPos[1] === this.food[1]) {
-            this.food = this.getFoodPosition();
+        const isBodyColiding = body.some(pos => this.isArraysEqual(pos, head));
+        const isArenaColiding = head.some(pos => pos < 0 || pos >= this.arenaSize);
+
+        if (this.food && this.isArraysEqual(head, this.food)) {
+            this.food = this.getFoodRandomPosition();
         } else if (isBodyColiding || isArenaColiding || this.body.length === this.arenaSize ** 2) {
             this.isPaused = true;
             this.body.pop();
@@ -112,31 +105,29 @@ class Snake {
 
         setTimeout(() => {
             this.move();
-        }, 100);
+        }, 1000 / this.fps);
     }
 
     switchDirection(event: KeyboardEvent) {
-        const wasPaused = this.isPaused;
-
-        if (this.isPaused) {
-            this.body = this.getCenterPosition();
-            if (!this.food) this.food = this.getFoodPosition();
-            this.isPaused = false;
-            this.move();
-        }
-
         if (event.key === 'ArrowUp' || event.key === 'w') {
-            if (this.direction === 'down' && !wasPaused) return;
+            if (this.direction === 'down' && !this.isPaused) return;
             this.direction = 'up';
         } else if (event.key === 'ArrowDown' || event.key === 's') {
-            if (this.direction === 'up' && !wasPaused) return;
+            if (this.direction === 'up' && !this.isPaused) return;
             this.direction = 'down';
         } else if(event.key === 'ArrowLeft' || event.key === 'a') {
-            if (this.direction === 'right' && !wasPaused) return;
+            if (this.direction === 'right' && !this.isPaused) return;
             this.direction = 'left';
         } else if (event.key === 'ArrowRight' || event.key === 'd') {
-            if (this.direction === 'left' && !wasPaused) return;
+            if (this.direction === 'left' && !this.isPaused) return;
             this.direction = 'right';
+        }
+
+        if (this.isPaused) {
+            this.body = this.getSnakeInitialPosition();
+            if (!this.food) this.food = this.getFoodRandomPosition();
+            this.isPaused = false;
+            this.move();
         }
     }
 
@@ -145,33 +136,60 @@ class Snake {
 
         for (let x = 0; x < this.arenaSize; x++) {
             for (let y = 0; y < this.arenaSize; y++) {
-                const isInBody = this.body.some(pos => pos[0] === x && pos[1] === y);
+                const currentPos = [x, y];
+                const isInBody = this.body.some(pos => this.isArraysEqual(pos, currentPos));
 
                 if (isInBody) continue;
-
-                availableSpots.push([x, y]);
+                availableSpots.push(currentPos);
             }   
         }
 
         return availableSpots;
     }
 
-    getFoodPosition() {
+    getFoodRandomPosition() {
         const availableSpots = this.getAvailableSpots();
+        if (availableSpots.length === 0) return undefined;
 
         const random = Math.floor(Math.random() * availableSpots.length);
-
         return availableSpots[random];
     }
 
-    getCenterPosition() {
+    getSnakeInitialPosition() {
         const y = parseInt(String(this.arenaSize / 2), 10);
         const x = parseInt(String(this.arenaSize / 4), 10);
 
         return [[x, y], [x + 1, y], [x + 2, y]];
     }
-}
+
+    getPonctuation() {
+        const initialPosition = this.getSnakeInitialPosition();
+
+        return this.body.length - initialPosition.length;
+    }
+
+    isArraysEqual(...arrays: unknown[][]) {
+        const firstArray = arrays[0];
+
+        for (const array of arrays) {
+            if (array.length !== firstArray.length) return false;
+
+            for (var i = 0; i < array.length; ++i) {
+              if (array[i] !== firstArray[i]) return false;
+            }
+        }
+
+        return true;
+    }
+
+    isEven(value: number) {
+        return value % 2 === 0;
+    }
+
+    isOdd(value: number) {
+        return value % 2 === 1;
+    }
+ }
 
 const canvas = document.querySelector('canvas') as HTMLCanvasElement;
-
-const snake = new Snake(canvas, 25);
+const snake = new Snake(canvas, 25, 10);

@@ -116,6 +116,8 @@ class Snake {
     }
 
     switchDirection(event: KeyboardEvent) {
+        const wasPaused = this.isPaused;
+
         if (this.isPaused) {
             this.body = this.getCenterPosition();
             if (!this.food) this.food = this.getFoodPosition();
@@ -124,16 +126,16 @@ class Snake {
         }
 
         if (event.key === 'ArrowUp' || event.key === 'w') {
-            if (this.direction === 'down') return;
+            if (this.direction === 'down' && !wasPaused) return;
             this.direction = 'up';
         } else if (event.key === 'ArrowDown' || event.key === 's') {
-            if (this.direction === 'up') return;
+            if (this.direction === 'up' && !wasPaused) return;
             this.direction = 'down';
         } else if(event.key === 'ArrowLeft' || event.key === 'a') {
-            if (this.direction === 'right') return;
+            if (this.direction === 'right' && !wasPaused) return;
             this.direction = 'left';
         } else if (event.key === 'ArrowRight' || event.key === 'd') {
-            if (this.direction === 'left') return;
+            if (this.direction === 'left' && !wasPaused) return;
             this.direction = 'right';
         }
     }

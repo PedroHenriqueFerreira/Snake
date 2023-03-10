@@ -99,6 +99,7 @@ class Snake {
         }, 100);
     }
     switchDirection(event) {
+        const wasPaused = this.isPaused;
         if (this.isPaused) {
             this.body = this.getCenterPosition();
             if (!this.food)
@@ -107,22 +108,22 @@ class Snake {
             this.move();
         }
         if (event.key === 'ArrowUp' || event.key === 'w') {
-            if (this.direction === 'down')
+            if (this.direction === 'down' && !wasPaused)
                 return;
             this.direction = 'up';
         }
         else if (event.key === 'ArrowDown' || event.key === 's') {
-            if (this.direction === 'up')
+            if (this.direction === 'up' && !wasPaused)
                 return;
             this.direction = 'down';
         }
         else if (event.key === 'ArrowLeft' || event.key === 'a') {
-            if (this.direction === 'right')
+            if (this.direction === 'right' && !wasPaused)
                 return;
             this.direction = 'left';
         }
         else if (event.key === 'ArrowRight' || event.key === 'd') {
-            if (this.direction === 'left')
+            if (this.direction === 'left' && !wasPaused)
                 return;
             this.direction = 'right';
         }

@@ -1,5 +1,14 @@
-# Snake
+## Snake
+![Concluido](http://img.shields.io/static/v1?label=STATUS&message=CONCLUÍDO&color=GREEN&style=for-the-badge)
 
-Apenas o jogo da cobrinha em Typescript e canvas HTML.
+## Descrição do repositório
+Este repositório contém o jogo da cobrinha, feito do zero por mim.
 
-Feito do zero por mim.
+
+## Execução
+Basta abrir o arquivo html no browser e se divertir
+
+## Tecnologias utilizadas
+- `Typescript`
+- `HTML`
+- `Canvas`

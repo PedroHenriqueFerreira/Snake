@@ -36,6 +36,7 @@ class SnakeGame {
             for (let y = 0; y < this.arenaSize; y++) {
                 const bodyIndex = this.body.findIndex(pos => this.isArraysEqual(pos, [x, y]));
                 const wallIndex = this.wall?.findIndex(pos => this.isArraysEqual(pos, [x, y]));
+                
                 const hasFood = this.food && this.isArraysEqual(this.food, [x, y]);
 
                 if (bodyIndex !== -1) ctx.fillStyle = this.isEven(bodyIndex) ? '#3A29A8' : '#4430BE';

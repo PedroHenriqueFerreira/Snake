@@ -1,13 +1,18 @@
 type Direction = 'up' | 'down' | 'left' | 'right';
 type Pos = [number, number];
 
-class Snake {
+class SnakeGame {
     private body: Pos[];
     private food?: Pos;
     private direction: Direction = 'right';
     private isPaused: boolean = true;
 
-    constructor(public canvas: HTMLCanvasElement, public arenaSize: number, public speed: number) {
+    constructor(
+        private canvas: HTMLCanvasElement, 
+        private arenaSize: number, 
+        private snakeSpeed: number, 
+        private wall?: Pos[]
+    ) {
         this.arenaSize = arenaSize;
 
         this.body = this.getSnakeInitialPos();
@@ -15,7 +20,7 @@ class Snake {
 
         this.draw();
 
-        window.addEventListener('keydown', (e) => this.switchSnakeDirection(e))
+        window.addEventListener('keydown', (e) => this.switchSnakeDirection(e));
     }
 
     draw() {
@@ -30,9 +35,11 @@ class Snake {
         for (let x = 0; x < this.arenaSize; x++) {
             for (let y = 0; y < this.arenaSize; y++) {
                 const bodyIndex = this.body.findIndex(pos => this.isArraysEqual(pos, [x, y]));
+                const wallIndex = this.wall?.findIndex(pos => this.isArraysEqual(pos, [x, y]));
                 const hasFood = this.food && this.isArraysEqual(this.food, [x, y]);
 
                 if (bodyIndex !== -1) ctx.fillStyle = this.isEven(bodyIndex) ? '#3A29A8' : '#4430BE';
+                else if (wallIndex !== undefined && wallIndex !== -1) ctx.fillStyle = this.isEven(wallIndex) ? '#373737' : '#3C3C3C';
                 else if (hasFood) ctx.fillStyle = '#BE3049';
                 else if ((this.isEven(x) && this.isOdd(y)) || (this.isOdd(x) && this.isEven(y))) ctx.fillStyle = '#7ECE6A';  
                 else continue;
@@ -90,11 +97,12 @@ class Snake {
         const body = this.body.slice(0, -1);
 
         const isBodyColiding = body.some(pos => this.isArraysEqual(pos, head));
+        const isWallColiding = this.wall?.some(pos => this.isArraysEqual(pos, head));
         const isArenaColiding = head.some(pos => pos < 0 || pos >= this.arenaSize);
 
         if (this.food && this.isArraysEqual(head, this.food)) {
             this.food = this.getFoodRandomPos();
-        } else if (isBodyColiding || isArenaColiding || this.body.length === this.arenaSize ** 2) {
+        } else if (isBodyColiding || isWallColiding || isArenaColiding || this.body.length === this.arenaSize ** 2) {
             this.isPaused = true;
             this.body.pop();
         } else {
@@ -107,7 +115,7 @@ class Snake {
 
         setTimeout(() => {
             this.move();
-        }, 1000 / this.speed);
+        }, 1000 / this.snakeSpeed);
     }
 
     switchSnakeDirection(event: KeyboardEvent) {
@@ -140,8 +148,9 @@ class Snake {
             for (let y = 0; y < this.arenaSize; y++) {
                 const currentPos: Pos = [x, y];
                 const isInBody = this.body.some(pos => this.isArraysEqual(pos, currentPos));
+                const isInColiders = this.wall?.some(pos => this.isArraysEqual(pos, currentPos));
 
-                if (isInBody) continue;
+                if (isInBody || isInColiders) continue;
                 availableSpots.push(currentPos);
             }   
         }
@@ -158,8 +167,8 @@ class Snake {
     }
 
     getSnakeInitialPos(): Pos[] {
-        const y = parseInt(String(this.arenaSize / 2), 10);
-        const x = parseInt(String(this.arenaSize / 4), 10);
+        const y = Math.floor(this.arenaSize / 2);
+        const x = Math.floor(this.arenaSize / 4);
 
         return [[x, y], [x + 1, y], [x + 2, y]];
     }
@@ -194,4 +203,5 @@ class Snake {
  }
 
 const canvas = document.querySelector('canvas') as HTMLCanvasElement;
-const snake = new Snake(canvas, 17, 10);
+
+const snake = new SnakeGame(canvas, 20, 10, []);

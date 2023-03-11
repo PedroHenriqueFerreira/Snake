@@ -1,9 +1,10 @@
 "use strict";
-class Snake {
-    constructor(canvas, arenaSize, speed) {
+class SnakeGame {
+    constructor(canvas, arenaSize, snakeSpeed, wall) {
         this.canvas = canvas;
         this.arenaSize = arenaSize;
-        this.speed = speed;
+        this.snakeSpeed = snakeSpeed;
+        this.wall = wall;
         this.direction = 'right';
         this.isPaused = true;
         this.arenaSize = arenaSize;
@@ -13,6 +14,7 @@ class Snake {
         window.addEventListener('keydown', (e) => this.switchSnakeDirection(e));
     }
     draw() {
+        var _a;
         const ctx = this.canvas.getContext('2d');
         const canvasSize = this.canvas.width;
         const pixelSize = canvasSize / this.arenaSize;
@@ -21,9 +23,12 @@ class Snake {
         for (let x = 0; x < this.arenaSize; x++) {
             for (let y = 0; y < this.arenaSize; y++) {
                 const bodyIndex = this.body.findIndex(pos => this.isArraysEqual(pos, [x, y]));
+                const wallIndex = (_a = this.wall) === null || _a === void 0 ? void 0 : _a.findIndex(pos => this.isArraysEqual(pos, [x, y]));
                 const hasFood = this.food && this.isArraysEqual(this.food, [x, y]);
                 if (bodyIndex !== -1)
                     ctx.fillStyle = this.isEven(bodyIndex) ? '#3A29A8' : '#4430BE';
+                else if (wallIndex !== undefined && wallIndex !== -1)
+                    ctx.fillStyle = this.isEven(wallIndex) ? '#373737' : '#3C3C3C';
                 else if (hasFood)
                     ctx.fillStyle = '#BE3049';
                 else if ((this.isEven(x) && this.isOdd(y)) || (this.isOdd(x) && this.isEven(y)))
@@ -56,6 +61,7 @@ class Snake {
         }
     }
     move() {
+        var _a;
         if (this.isPaused)
             return;
         const currentHead = this.body[this.body.length - 1];
@@ -76,11 +82,12 @@ class Snake {
         const head = this.body[this.body.length - 1];
         const body = this.body.slice(0, -1);
         const isBodyColiding = body.some(pos => this.isArraysEqual(pos, head));
+        const isWallColiding = (_a = this.wall) === null || _a === void 0 ? void 0 : _a.some(pos => this.isArraysEqual(pos, head));
         const isArenaColiding = head.some(pos => pos < 0 || pos >= this.arenaSize);
         if (this.food && this.isArraysEqual(head, this.food)) {
             this.food = this.getFoodRandomPos();
         }
-        else if (isBodyColiding || isArenaColiding || this.body.length === this.arenaSize ** 2) {
+        else if (isBodyColiding || isWallColiding || isArenaColiding || this.body.length === this.arenaSize ** 2) {
             this.isPaused = true;
             this.body.pop();
         }
@@ -92,7 +99,7 @@ class Snake {
             return;
         setTimeout(() => {
             this.move();
-        }, 1000 / this.speed);
+        }, 1000 / this.snakeSpeed);
     }
     switchSnakeDirection(event) {
         if (event.key === 'ArrowUp' || event.key === 'w') {
@@ -124,12 +131,14 @@ class Snake {
         }
     }
     getAvailableSpots() {
+        var _a;
         const availableSpots = [];
         for (let x = 0; x < this.arenaSize; x++) {
             for (let y = 0; y < this.arenaSize; y++) {
                 const currentPos = [x, y];
                 const isInBody = this.body.some(pos => this.isArraysEqual(pos, currentPos));
-                if (isInBody)
+                const isInColiders = (_a = this.wall) === null || _a === void 0 ? void 0 : _a.some(pos => this.isArraysEqual(pos, currentPos));
+                if (isInBody || isInColiders)
                     continue;
                 availableSpots.push(currentPos);
             }
@@ -144,8 +153,8 @@ class Snake {
         return availableSpots[random];
     }
     getSnakeInitialPos() {
-        const y = parseInt(String(this.arenaSize / 2), 10);
-        const x = parseInt(String(this.arenaSize / 4), 10);
+        const y = Math.floor(this.arenaSize / 2);
+        const x = Math.floor(this.arenaSize / 4);
         return [[x, y], [x + 1, y], [x + 2, y]];
     }
     getSnakePonctuation() {
@@ -172,4 +181,4 @@ class Snake {
     }
 }
 const canvas = document.querySelector('canvas');
-const snake = new Snake(canvas, 17, 10);
+const snake = new SnakeGame(canvas, 20, 10, []);

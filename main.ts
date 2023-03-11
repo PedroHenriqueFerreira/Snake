@@ -1,19 +1,21 @@
 type Direction = 'up' | 'down' | 'left' | 'right';
+type Pos = [number, number];
 
 class Snake {
-    private body: number[][];
-    private food?: number[];
+    private body: Pos[];
+    private food?: Pos;
     private direction: Direction = 'right';
     private isPaused: boolean = true;
 
-    constructor(public canvas: HTMLCanvasElement, public arenaSize: number, public fps: number) {
+    constructor(public canvas: HTMLCanvasElement, public arenaSize: number, public speed: number) {
         this.arenaSize = arenaSize;
-        this.body = this.getSnakeInitialPosition();
 
-        this.food = this.getFoodRandomPosition();
+        this.body = this.getSnakeInitialPos();
+        this.food = this.getFoodRandomPos();
+
         this.draw();
 
-        window.addEventListener('keydown', (e) => this.switchDirection(e))
+        window.addEventListener('keydown', (e) => this.switchSnakeDirection(e))
     }
 
     draw() {
@@ -53,7 +55,7 @@ class Snake {
         ctx.font = '50px Minecraft';   
         ctx.textAlign = "center";
 
-        const isSnakeStarting = this.isArraysEqual(this.getSnakeInitialPosition().flat(), this.body.flat());
+        const isSnakeStarting = this.isArraysEqual(this.getSnakeInitialPos().flat(), this.body.flat());
 
         if (isSnakeStarting) {
             ctx.fillText("Jogar Snake", canvasSize / 2, canvasSize / 2); 
@@ -61,7 +63,7 @@ class Snake {
             ctx.fillText("Parabens", canvasSize / 2, canvasSize / 2);
         } else {
             ctx.fillText("Jogar Novamente", canvasSize / 2, canvasSize / 2); 
-            ctx.fillText(`Pontos: ${this.getPonctuation()}`, canvasSize / 2, (canvasSize / 2) - 100);
+            ctx.fillText(`Pontos: ${this.getSnakePonctuation()}`, canvasSize / 2, (canvasSize / 2) - 100);
         }
     }
 
@@ -91,7 +93,7 @@ class Snake {
         const isArenaColiding = head.some(pos => pos < 0 || pos >= this.arenaSize);
 
         if (this.food && this.isArraysEqual(head, this.food)) {
-            this.food = this.getFoodRandomPosition();
+            this.food = this.getFoodRandomPos();
         } else if (isBodyColiding || isArenaColiding || this.body.length === this.arenaSize ** 2) {
             this.isPaused = true;
             this.body.pop();
@@ -105,10 +107,10 @@ class Snake {
 
         setTimeout(() => {
             this.move();
-        }, 1000 / this.fps);
+        }, 1000 / this.speed);
     }
 
-    switchDirection(event: KeyboardEvent) {
+    switchSnakeDirection(event: KeyboardEvent) {
         if (event.key === 'ArrowUp' || event.key === 'w') {
             if (this.direction === 'down' && !this.isPaused) return;
             this.direction = 'up';
@@ -124,19 +126,19 @@ class Snake {
         }
 
         if (this.isPaused) {
-            this.body = this.getSnakeInitialPosition();
-            if (!this.food) this.food = this.getFoodRandomPosition();
+            this.body = this.getSnakeInitialPos();
+            if (!this.food) this.food = this.getFoodRandomPos();
             this.isPaused = false;
             this.move();
         }
     }
 
     getAvailableSpots() {
-        const availableSpots = [];
+        const availableSpots: Pos[] = [];
 
         for (let x = 0; x < this.arenaSize; x++) {
             for (let y = 0; y < this.arenaSize; y++) {
-                const currentPos = [x, y];
+                const currentPos: Pos = [x, y];
                 const isInBody = this.body.some(pos => this.isArraysEqual(pos, currentPos));
 
                 if (isInBody) continue;
@@ -147,7 +149,7 @@ class Snake {
         return availableSpots;
     }
 
-    getFoodRandomPosition() {
+    getFoodRandomPos(): Pos | undefined {
         const availableSpots = this.getAvailableSpots();
         if (availableSpots.length === 0) return undefined;
 
@@ -155,17 +157,17 @@ class Snake {
         return availableSpots[random];
     }
 
-    getSnakeInitialPosition() {
+    getSnakeInitialPos(): Pos[] {
         const y = parseInt(String(this.arenaSize / 2), 10);
         const x = parseInt(String(this.arenaSize / 4), 10);
 
         return [[x, y], [x + 1, y], [x + 2, y]];
     }
 
-    getPonctuation() {
-        const initialPosition = this.getSnakeInitialPosition();
+    getSnakePonctuation() {
+        const initialPos = this.getSnakeInitialPos();
 
-        return this.body.length - initialPosition.length;
+        return this.body.length - initialPos.length;
     }
 
     isArraysEqual(...arrays: unknown[][]) {
@@ -192,4 +194,4 @@ class Snake {
  }
 
 const canvas = document.querySelector('canvas') as HTMLCanvasElement;
-const snake = new Snake(canvas, 25, 10);
+const snake = new Snake(canvas, 17, 10);

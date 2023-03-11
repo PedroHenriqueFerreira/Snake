@@ -1,16 +1,16 @@
 "use strict";
 class Snake {
-    constructor(canvas, arenaSize, fps) {
+    constructor(canvas, arenaSize, speed) {
         this.canvas = canvas;
         this.arenaSize = arenaSize;
-        this.fps = fps;
+        this.speed = speed;
         this.direction = 'right';
         this.isPaused = true;
         this.arenaSize = arenaSize;
-        this.body = this.getSnakeInitialPosition();
-        this.food = this.getFoodRandomPosition();
+        this.body = this.getSnakeInitialPos();
+        this.food = this.getFoodRandomPos();
         this.draw();
-        window.addEventListener('keydown', (e) => this.switchDirection(e));
+        window.addEventListener('keydown', (e) => this.switchSnakeDirection(e));
     }
     draw() {
         const ctx = this.canvas.getContext('2d');
@@ -43,7 +43,7 @@ class Snake {
         ctx.fillStyle = '#fff';
         ctx.font = '50px Minecraft';
         ctx.textAlign = "center";
-        const isSnakeStarting = this.isArraysEqual(this.getSnakeInitialPosition().flat(), this.body.flat());
+        const isSnakeStarting = this.isArraysEqual(this.getSnakeInitialPos().flat(), this.body.flat());
         if (isSnakeStarting) {
             ctx.fillText("Jogar Snake", canvasSize / 2, canvasSize / 2);
         }
@@ -52,7 +52,7 @@ class Snake {
         }
         else {
             ctx.fillText("Jogar Novamente", canvasSize / 2, canvasSize / 2);
-            ctx.fillText(`Pontos: ${this.getPonctuation()}`, canvasSize / 2, (canvasSize / 2) - 100);
+            ctx.fillText(`Pontos: ${this.getSnakePonctuation()}`, canvasSize / 2, (canvasSize / 2) - 100);
         }
     }
     move() {
@@ -78,7 +78,7 @@ class Snake {
         const isBodyColiding = body.some(pos => this.isArraysEqual(pos, head));
         const isArenaColiding = head.some(pos => pos < 0 || pos >= this.arenaSize);
         if (this.food && this.isArraysEqual(head, this.food)) {
-            this.food = this.getFoodRandomPosition();
+            this.food = this.getFoodRandomPos();
         }
         else if (isBodyColiding || isArenaColiding || this.body.length === this.arenaSize ** 2) {
             this.isPaused = true;
@@ -92,9 +92,9 @@ class Snake {
             return;
         setTimeout(() => {
             this.move();
-        }, 1000 / this.fps);
+        }, 1000 / this.speed);
     }
-    switchDirection(event) {
+    switchSnakeDirection(event) {
         if (event.key === 'ArrowUp' || event.key === 'w') {
             if (this.direction === 'down' && !this.isPaused)
                 return;
@@ -116,9 +116,9 @@ class Snake {
             this.direction = 'right';
         }
         if (this.isPaused) {
-            this.body = this.getSnakeInitialPosition();
+            this.body = this.getSnakeInitialPos();
             if (!this.food)
-                this.food = this.getFoodRandomPosition();
+                this.food = this.getFoodRandomPos();
             this.isPaused = false;
             this.move();
         }
@@ -136,21 +136,21 @@ class Snake {
         }
         return availableSpots;
     }
-    getFoodRandomPosition() {
+    getFoodRandomPos() {
         const availableSpots = this.getAvailableSpots();
         if (availableSpots.length === 0)
             return undefined;
         const random = Math.floor(Math.random() * availableSpots.length);
         return availableSpots[random];
     }
-    getSnakeInitialPosition() {
+    getSnakeInitialPos() {
         const y = parseInt(String(this.arenaSize / 2), 10);
         const x = parseInt(String(this.arenaSize / 4), 10);
         return [[x, y], [x + 1, y], [x + 2, y]];
     }
-    getPonctuation() {
-        const initialPosition = this.getSnakeInitialPosition();
-        return this.body.length - initialPosition.length;
+    getSnakePonctuation() {
+        const initialPos = this.getSnakeInitialPos();
+        return this.body.length - initialPos.length;
     }
     isArraysEqual(...arrays) {
         const firstArray = arrays[0];
@@ -172,4 +172,4 @@ class Snake {
     }
 }
 const canvas = document.querySelector('canvas');
-const snake = new Snake(canvas, 25, 10);
+const snake = new Snake(canvas, 17, 10);
